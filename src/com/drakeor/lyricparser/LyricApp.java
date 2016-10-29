@@ -9,16 +9,42 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 
 public class LyricApp {
 
+    // Container for reserved words
+    private HashSet<String> reservedWords;
+
+    public LyricApp() {
+
+        // Un-comment below to omit commonly used words like "and" and "the"
+        reservedWords = new HashSet<>();
+        String reservedList[] = {
+                // Conjunctions
+                //"for", "and", "nor", "but", "or", "yet", "so"
+
+                // Definite / Indefinite articles
+                //,"a", "an", "the"
+
+                // Personal Pronouns
+                //,"i", "me", "we", "us", "you", "he", "him", "her", "she", "it", "they", "them"
+
+                // Interrogative pro-forms
+                //,"who", "whom", "what", "where", "why", "when"
+        };
+        reservedWords.addAll(Arrays.asList(reservedList));
+    }
+
+    // Splits out words and adds them to the list
     private void FilterWords(String lyric, HashMap<String, Integer> listOfWords) {
         String[] words = lyric.split(" ");
         for(String word : words) {
             word = word.trim();
-            if(!word.isEmpty()) {
+            if(!word.isEmpty() && !reservedWords.contains(word)) {
                 Integer currentWordCount = listOfWords.get(word);
                 if (currentWordCount == null) {
                     listOfWords.put(word, 1);
@@ -29,6 +55,7 @@ public class LyricApp {
         }
     }
 
+    // Grabs the top 100 songs from songlyrics.com
     public void Run() {
 
         // Few starting variables
@@ -45,20 +72,15 @@ public class LyricApp {
         }
 
         // Grab the table on this page that has a list of all the tracks
-        Elements contents = doc.getElementsByClass("tracklist");
-        for(Element content : contents) {
+        Element content = doc.getElementsByClass("tracklist").get(0);
 
-            // Only grab the last cell of each table to prevent duplicate links
-            Elements correctRows = content.getElementsByClass("td-last");
-            for(Element correctRow : correctRows) {
+        // Only grab the last cell of each table to prevent duplicate links
+        Elements correctRows = content.getElementsByClass("td-last");
 
-                // Scrape the links and add them to the hashset
-                Elements links = correctRow.getElementsByTag("a");
-                for (Element link : links) {
-                    String linkHref = link.attr("href");
-                    songList.add(linkHref);
-                }
-            }
+        // Scrape the links and add them to the hashset
+        for(Element correctRow : correctRows) {
+            Element link = correctRow.getElementsByTag("a").get(0);
+            songList.add(link.attr("href"));
         }
 
         // Iterate through our hashset
@@ -87,8 +109,10 @@ public class LyricApp {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
+
     }
 
+    // Get lyrics from a single song designated by lyricUrl
     private String GetSongLyrics(String lyricUrl) {
 
         // Try to get the contents of the webpage
